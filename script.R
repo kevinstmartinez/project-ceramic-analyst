@@ -3,10 +3,6 @@ library(tidyverse)
 library(ggplot2)
 library(priceR)
 
-data <- sqldf('SELECT  *  FROM Consolidado_Base_de_datos_verificadores_2021')
-#View(data)
-
-
 ## 10 ref mas rechazadas 
 
 data_1 <- sqldf('SELECT A.* FROM 
@@ -54,6 +50,7 @@ GROUP BY [Resultado]) A
 Grafica_2 <- ggplot(data_2,aes(x="",y=Porcentaje, fill=Resultado))+
   geom_bar(stat = "identity",
            color="white")+
+  ggtitle("Cantidades de lotes conformes y no conformes")+
   geom_text(aes(label=paste(Porcentaje, "%")),
             position=position_stack(vjust=0.73),color="white",size=5)+
   coord_polar(theta = "y")
@@ -135,14 +132,12 @@ SELECT A.Mes, A.Cantidad_lote FROM (
 where Resultado = "No Conforme"
 GROUP by MES
 )A
-order by A.Fecha
-                
-                ')
+order by A.Fecha')
 #View(data_5)
 
 
 Grafica_5 <- ggplot(data_5, aes(x=fct_inorder(Mes), y=Cantidad_lote, group=1,label=Cantidad_lote)) +
-  geom_line(color="skyblue",size=1.5)+
+  geom_line(color="#FF9C04",size=1.5)+
   ylab("Cantidad") +
   xlab("Mes") +
   ggtitle("Cantidad de unidades de lotes rechazados por mes")+
@@ -152,7 +147,9 @@ Grafica_5 <- ggplot(data_5, aes(x=fct_inorder(Mes), y=Cantidad_lote, group=1,lab
     plot.title = element_text(size = 10, face = "bold", color = "black",hjust = 0.5)
   )+
   geom_point()+
-  geom_text(nudge_y = 2)
+  geom_text(nudge_x = 0.25, nudge_y = 0.25, 
+            check_overlap = T)
+
 
 #-------------COSTO POR DESTRUCCION DEL MATERIAL Y	COSTO POR REPROCESO DEL MATERIAL (MO)	-------------
 
@@ -171,7 +168,7 @@ Grafica_6 <- ggplot(data_6, aes(x = reorder(Perdida, -Total), y= Total, fill =Pe
   scale_y_continuous(limit = c(0,44000000))+
   
   geom_col(position='dodge',width = .5 ) +
-  labs( title = "COSTO POR DESTRUCCION DEL MATERIAL Y	COSTO POR REPROCESO DEL MATERIAL (MO)	\n", x= "Perdida" , y ="Costo" )+
+  labs( title = "Costo por destrucción del material y perdida por reproceso\n", x= "Perdida" , y ="Costo" )+
   
   geom_text(aes(y =  Total, label = format_dollars(Total,1)), 
             position = position_dodge(width = 0.9), size=5.5, vjust=-1, hjust=0.5 ,col="black")+
@@ -181,6 +178,27 @@ Grafica_6 <- ggplot(data_6, aes(x = reorder(Perdida, -Total), y= Total, fill =Pe
     plot.title = element_text(size = 10, face = "bold", color = "black",hjust = 0.5)
   )
 
+
+data_7 <- sqldf('SELECT A.Defecto, ROUND( (A.counter / A.total *1.0)*100,2) AS Porcentaje FROM
+(SELECT Defecto, SUM([Cantidad Lote]) AS counter,
+(SELECT SUM([Cantidad Lote]) AS counter
+FROM Consolidado_Base_de_datos_verificadores_2021
+WHERE Resultado = "No Conforme") total
+FROM Consolidado_Base_de_datos_verificadores_2021
+WHERE Resultado = "No Conforme"
+GROUP BY Defecto)A
+ORDER BY A.counter DESC
+LIMIT 10')
+View(data_7)
+
+Grafica_7 <- ggplot(data_7,aes(x="",y=Porcentaje, fill=Defecto))+
+  geom_bar(stat = "identity",
+           color="white")+
+  
+  ggtitle("Diez causas principales de rechazo")+
+  geom_text(aes(label=paste(Porcentaje, "%")),
+            position=position_stack(vjust=0.5),color="white",size=5)+
+  coord_polar(theta = "y")
 #-----------------------
 
 Grafica_1
@@ -194,5 +212,8 @@ Grafica_4
 Grafica_5
 
 Grafica_6
+
+Grafica_7
 #--------
-  
+
+
